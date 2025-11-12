@@ -64,74 +64,49 @@ def home():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    """Handle JSON submission, preprocess data, and return JSON prediction."""
+    """Handle form submission, preprocess data, and return prediction page."""
     if model is None or preprocessor is None:
-        return jsonify(
-            {"error": "Prediction service is unavailable. Model files could not be loaded."}
-        ), 500
+        return render_template('result.html', prediction="Model not loaded!", probability=0)
 
     try:
-        # **FLASK JSON CHANGE: Get data from the JSON body**
-        form_data = request.get_json()
+        # Collect form data instead of JSON
+        form_data = request.form
+
+        # Prepare input values
+        COLUMNS = ['age', 'hypertension', 'heart_disease', 'bmi', 
+                   'HbA1c_level', 'blood_glucose_level', 'gender_Male', 'is_smoker']
         
-        if not form_data:
-            return jsonify({"error": "No JSON data received. Check Content-Type header."}), 400
-            
-        # 1. Collect data into a DataFrame. Ensure types are correct.
-        COLUMNS = [
-            'age', 'hypertension', 'heart_disease', 'bmi', 
-            'HbA1c_level', 'blood_glucose_level', 'gender_Male', 'is_smoker'
-        ]
-        
-        # Prepare input values, converting them to the correct type based on keys
         input_values = []
         for key in COLUMNS:
             val = form_data.get(key)
-            if val is None or val == "":
-                raise ValueError(f"Missing required field: {key}")
-
+            if val is None or val.strip() == "":
+                return render_template('result.html', prediction=f"{key} is required", probability=0)
+            
             if key in ['hypertension', 'heart_disease', 'gender_Male', 'is_smoker']:
-                # Binary features are integers
                 input_values.append(int(val))
             else:
-                # Continuous features are floats
                 input_values.append(float(val))
-
+        
+        # Create DataFrame and preprocess
         raw_data = pd.DataFrame([input_values], columns=COLUMNS)
-
-        # 2. Preprocess the data
         processed_data = preprocessor.transform(raw_data)
 
-        # 3. Make Prediction
+        # Make prediction
         prediction_class = model.predict(processed_data)[0]
         prediction_proba = model.predict_proba(processed_data)[0]
 
-        # 4. Format results
-        result = {
-            "prediction": int(prediction_class), # 0 for No Diabetes, 1 for Diabetes
-            "probability_no_diabetes": round(prediction_proba[0] * 100, 2),
-            "probability_diabetes": round(prediction_proba[1] * 100, 2),
-            "message": "Prediction successful."
-        }
+        # Format result
+        result_text = "🩸 Diabetic" if prediction_class == 1 else "💚 Non-Diabetic"
+        probability = round(prediction_proba[1] * 100, 2)
 
-        # Flask returns JSON using jsonify
-        return jsonify(result)
-
-    except ValueError as ve:
-        # Handle cases where inputs could not be converted to int/float
-        print(f"Input conversion error: {ve}")
-        return jsonify(
-            {"error": f"Invalid input value: {ve}"}
-        ), 400
+        return render_template('result.html', prediction=result_text, probability=probability)
 
     except Exception as e:
-        print(f"An unexpected server error occurred: {e}")
-        # The generic error handling returns JSON
-        return jsonify(
-            {"error": f"An unexpected server error occurred."}
-        ), 500
+        return render_template('result.html', prediction=f"An error occurred: {e}", probability=0)
+
 
 # Railway will use Gunicorn/Waitress, which calls the 'app' instance directly.
 # The code below is only for local testing.
 # if __name__ == '__main__':
 #     app.run(debug=True, host='0.0.0.0', port=8000)
+

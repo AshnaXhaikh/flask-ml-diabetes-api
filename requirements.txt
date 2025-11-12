@@ -1,6 +1,8 @@
-Flask==3.0.3
+Flask
 numpy
 pandas
 scikit-learn
 gunicorn
 joblib
+flask-cors
+

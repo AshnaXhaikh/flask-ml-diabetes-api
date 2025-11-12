@@ -57,36 +57,34 @@ def home():
 
 
 
+from flask import jsonify
+
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        input_values = []
         feature_names = ['age', 'hypertension', 'heart_disease', 'bmi',
                          'HbA1c_level', 'blood_glucose_level', 'gender_Male', 'is_smoker']
 
+        input_values = []
         for f in feature_names:
-            val = request.form.get(f)
-            if val is None or val.strip() == "":
-                return render_template('result.html', prediction=f"Error: {f.replace('_', ' ')} is required!", probability=0)
-
-            if f in ['hypertension', 'heart_disease', 'gender_Male', 'is_smoker']:
-                input_values.append(int(val))
-            else:
-                input_values.append(float(val))
+            val = request.json.get(f)
+            if val is None:
+                return jsonify({"error": f"{f} is required"}), 400
+            input_values.append(int(val) if f in ['hypertension', 'heart_disease', 'gender_Male', 'is_smoker'] else float(val))
 
         input_df = pd.DataFrame([input_values], columns=feature_names)
         scaled_input = preprocessor.transform(input_df)
         prediction = model.predict(scaled_input)[0]
         prob = model.predict_proba(scaled_input)[0][1]
 
-        # Show result in the format you want
-        result_text = "🩸 Diabetic" if prediction == 1 else "💚 Non-Diabetic"
-        probability = round(prob*100, 2)
-
-        return render_template('result.html', prediction=result_text, probability=probability)
-
+        return jsonify({
+            "prediction": int(prediction),
+            "probability_diabetes": round(prob*100, 2),
+            "probability_no_diabetes": round((1-prob)*100, 2)
+        })
     except Exception as e:
-        return render_template('result.html', prediction=f"An error occurred: {e}", probability=0)
+        return jsonify({"error": str(e)}), 500
+
 
 
 
@@ -94,6 +92,7 @@ def predict():
 # The code below is only for local testing.
 # if __name__ == '__main__':
 #     app.run(debug=True, host='0.0.0.0', port=8000)
+
 
 
 

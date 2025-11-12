@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diabetes Prediction System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container mt-5">
+        <!-- 
+          I've removed the inline style and added a 'card-form' class.
+          This is cleaner as the style is now in style.css.
+        -->
+        <div class="card shadow-lg p-4 mx-auto card-form">
+            <h2 class="text-center mb-4">🩺 Diabetes Prediction System</h2>
+            
+            <form action="/predict" method="POST">
+                {% for feature in features %}
+                <div class="mb-3">
+                    
+                    {% set label_text = 'Gender' if feature == 'gender_Male' else feature.replace("_", " ").title() %}
+                    
+                    <!-- Updated label to include the info icon -->
+                    <label for="{{ feature }}" class="form-label">
+                        {{ label_text }}:
+                        
+                        <!-- 
+                          START: Added Tooltip Info
+                          This adds a small 'i' icon with a tooltip for specific features.
+                        -->
+                        {% if feature == 'HbA1c_level' %}
+                            <span class="info-icon" data-bs-toggle="tooltip" 
+                                  data-bs-title="Measures average blood sugar over 3 months. <br> (Normal: < 5.7%)">i</span>
+                        {% elif feature == 'blood_glucose_level' %}
+                            <span class="info-icon" data-bs-toggle="tooltip" 
+                                  data-bs-title="Your blood sugar at this moment. <br> (Normal Fasting: < 100 mg/dL)">i</span>
+                        {% endif %}
+                        <!-- END: Added Tooltip Info -->
+                    </label>
+
+                    <!-- This logic for inputs/selects remains the same -->
+                    {% if feature in ['hypertension', 'heart_disease', 'is_smoker'] %}
+                        <select class="form-select" name="{{ feature }}" id="{{ feature }}" required>
+                            <option value="" disabled selected>Select an option</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    {% elif feature == 'gender_Male' %}
+                        <select class="form-select" name="{{ feature }}" id="{{ feature }}" required>
+                            <option value="1">Male</option>
+                            <option value="0">Female</option>
+                        </select>
+                    {% else %}
+                        <input type="number" class="form-control" step="any" name="{{ feature }}" id="{{ feature }}"
+                               placeholder="Enter {{ label_text }}" required>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">Predict</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- 
+      START: Added Script for Tooltips
+      This JavaScript is required to initialize the Bootstrap tooltips.
+    -->
+    <script>
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl, {
+            html: true // Allow HTML (like <br>) in the tooltip title
+          })
+        })
+    </script>
+    <!-- END: Added Script for Tooltips -->
+</body>
+</html>

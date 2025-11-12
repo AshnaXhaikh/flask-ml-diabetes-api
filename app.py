@@ -13,7 +13,7 @@ PREPROCESSOR_PATH = os.path.join("models", "preprocessor.pkl")
 # Initialize Flask app
 # The template_folder is set to look in 'app/templates' relative to the app file.
 # Railway's build process usually runs the app from the root directory.
-app = Flask(__name__, template_folder='app/templates') 
+app = Flask(__name__) 
 
 # Load Model and Preprocessor
 model = None
@@ -50,16 +50,11 @@ load_models()
 
 @app.route("/", methods=["GET"])
 def home():
-    """Serve the main prediction HTML page using Flask's render_template."""
-    # This should now correctly resolve to app/templates/index.html
-    return render_template("index.html")
+    return render_template("index.html", features=[
+        'age', 'hypertension', 'heart_disease', 'bmi',
+        'HbA1c_level', 'blood_glucose_level', 'gender_Male', 'is_smoker'
+    ])
 
-
-# You can remove this simple health check if you don't need it, 
-# as the / route now serves HTML.
-# @app.route("/api/health")
-# def read_root():
-#     return jsonify({"message": "Diabetes Prediction API is running"})
 
 
 @app.route("/predict", methods=["POST"])
@@ -109,4 +104,5 @@ def predict():
 # The code below is only for local testing.
 # if __name__ == '__main__':
 #     app.run(debug=True, host='0.0.0.0', port=8000)
+
 

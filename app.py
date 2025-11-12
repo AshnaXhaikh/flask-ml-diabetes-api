@@ -59,40 +59,29 @@ def home():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    """Handle form submission, preprocess data, and return prediction page."""
-    if model is None or preprocessor is None:
-        return render_template('result.html', prediction="Model not loaded!", probability=0)
-
     try:
-        # Collect form data instead of JSON
-        form_data = request.form
-
-        # Prepare input values
-        COLUMNS = ['age', 'hypertension', 'heart_disease', 'bmi', 
-                   'HbA1c_level', 'blood_glucose_level', 'gender_Male', 'is_smoker']
-        
         input_values = []
-        for key in COLUMNS:
-            val = form_data.get(key)
+        feature_names = ['age', 'hypertension', 'heart_disease', 'bmi',
+                         'HbA1c_level', 'blood_glucose_level', 'gender_Male', 'is_smoker']
+
+        for f in feature_names:
+            val = request.form.get(f)
             if val is None or val.strip() == "":
-                return render_template('result.html', prediction=f"{key} is required", probability=0)
-            
-            if key in ['hypertension', 'heart_disease', 'gender_Male', 'is_smoker']:
+                return render_template('result.html', prediction=f"Error: {f.replace('_', ' ')} is required!", probability=0)
+
+            if f in ['hypertension', 'heart_disease', 'gender_Male', 'is_smoker']:
                 input_values.append(int(val))
             else:
                 input_values.append(float(val))
-        
-        # Create DataFrame and preprocess
-        raw_data = pd.DataFrame([input_values], columns=COLUMNS)
-        processed_data = preprocessor.transform(raw_data)
 
-        # Make prediction
-        prediction_class = model.predict(processed_data)[0]
-        prediction_proba = model.predict_proba(processed_data)[0]
+        input_df = pd.DataFrame([input_values], columns=feature_names)
+        scaled_input = preprocessor.transform(input_df)
+        prediction = model.predict(scaled_input)[0]
+        prob = model.predict_proba(scaled_input)[0][1]
 
-        # Format result
-        result_text = "🩸 Diabetic" if prediction_class == 1 else "💚 Non-Diabetic"
-        probability = round(prediction_proba[1] * 100, 2)
+        # Show result in the format you want
+        result_text = "🩸 Diabetic" if prediction == 1 else "💚 Non-Diabetic"
+        probability = round(prob*100, 2)
 
         return render_template('result.html', prediction=result_text, probability=probability)
 
@@ -100,9 +89,11 @@ def predict():
         return render_template('result.html', prediction=f"An error occurred: {e}", probability=0)
 
 
+
 # Railway will use Gunicorn/Waitress, which calls the 'app' instance directly.
 # The code below is only for local testing.
 # if __name__ == '__main__':
 #     app.run(debug=True, host='0.0.0.0', port=8000)
+
 
 

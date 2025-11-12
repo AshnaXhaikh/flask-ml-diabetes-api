@@ -5,17 +5,17 @@ import os
 
 app = Flask(__name__)
 
-# Load saved model and preprocessor
+# Load model and preprocessor
 model = joblib.load('log_reg.pkl')
 preprocessor = joblib.load('data_preprocessor.pkl')
 
-# Feature names in exact order your model expects
+# Feature names in the same order as the model expects
 feature_names = ['age', 'hypertension', 'heart_disease', 'bmi',
                  'HbA1c_level', 'blood_glucose_level', 'gender_Male', 'is_smoker']
 
 @app.route('/')
 def home():
-    # Render index.html with features for the form
+    # Render the HTML form
     return render_template('index.html', features=feature_names)
 
 @app.route('/predict', methods=['POST'])
@@ -23,7 +23,7 @@ def predict():
     try:
         input_values = []
 
-        # Collect and validate user inputs from HTML form
+        # Collect inputs from the form
         for f in feature_names:
             val = request.form.get(f)
             if val is None or val.strip() == "":
@@ -41,7 +41,7 @@ def predict():
         # Create DataFrame with correct columns
         input_df = pd.DataFrame([input_values], columns=feature_names)
 
-        # Apply preprocessing
+        # Apply preprocessor
         scaled_input = preprocessor.transform(input_df)
 
         # Make prediction
@@ -63,4 +63,5 @@ def predict():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
+    # Debug True is okay locally, but False for Railway deployment
     app.run(host='0.0.0.0', port=port, debug=False)

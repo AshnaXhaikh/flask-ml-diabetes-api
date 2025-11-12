@@ -6,75 +6,234 @@
     <title>Diabetes Prediction System</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <style>
+        /* Custom Styles for Centering and Shadow */
+        body {
+            background-color: #f8f9fa;
+        }
+        .card-form {
+            max-width: 600px;
+            margin-top: 50px;
+        }
+        .info-icon {
+            cursor: pointer;
+            color: #0d6efd;
+            font-size: 0.8em;
+            display: inline-block;
+            width: 1.2em;
+            height: 1.2em;
+            line-height: 1.2em;
+            text-align: center;
+            border-radius: 50%;
+            border: 1px solid #0d6efd;
+            font-style: normal;
+        }
+        .form-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
-        <!-- 
-          I've removed the inline style and added a 'card-form' class.
-          This is cleaner as the style is now in style.css.
-        -->
         <div class="card shadow-lg p-4 mx-auto card-form">
-            <h2 class="text-center mb-4">🩺 Diabetes Prediction System</h2>
+            <h2 class="text-center mb-4 text-primary">🩺 Diabetes Risk Predictor</h2>
             
-            <form action="/predict" method="POST">
-                {% for feature in features %}
-                <div class="mb-3">
-                    
-                    {% set label_text = 'Gender' if feature == 'gender_Male' else feature.replace("_", " ").title() %}
-                    
-                    <!-- Updated label to include the info icon -->
-                    <label for="{{ feature }}" class="form-label">
-                        {{ label_text }}:
-                        
-                        <!-- 
-                          START: Added Tooltip Info
-                          This adds a small 'i' icon with a tooltip for specific features.
-                        -->
-                        {% if feature == 'HbA1c_level' %}
-                            <span class="info-icon" data-bs-toggle="tooltip" 
-                                  data-bs-title="Measures average blood sugar over 3 months. <br> (Normal: < 5.7%)">i</span>
-                        {% elif feature == 'blood_glucose_level' %}
-                            <span class="info-icon" data-bs-toggle="tooltip" 
-                                  data-bs-title="Your blood sugar at this moment. <br> (Normal Fasting: < 100 mg/dL)">i</span>
-                        {% endif %}
-                        <!-- END: Added Tooltip Info -->
-                    </label>
-
-                    <!-- This logic for inputs/selects remains the same -->
-                    {% if feature in ['hypertension', 'heart_disease', 'is_smoker'] %}
-                        <select class="form-select" name="{{ feature }}" id="{{ feature }}" required>
-                            <option value="" disabled selected>Select an option</option>
-                            <option value="1">Yes</option>
-                            <option value="0">No</option>
-                        </select>
-                    {% elif feature == 'gender_Male' %}
-                        <select class="form-select" name="{{ feature }}" id="{{ feature }}" required>
-                            <option value="1">Male</option>
-                            <option value="0">Female</option>
-                        </select>
-                    {% else %}
-                        <input type="number" class="form-control" step="any" name="{{ feature }}" id="{{ feature }}"
-                               placeholder="Enter {{ label_text }}" required>
-                    {% endif %}
-                </div>
-                {% endfor %}
+            <!-- Prediction Form -->
+            <form id="prediction-form">
                 
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-primary btn-lg">Predict</button>
+                <!-- Row 1: Age & BMI -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="age" class="form-label">Age (Years)</label>
+                        <input type="number" class="form-control" name="age" id="age" placeholder="e.g., 45" min="1" max="120" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="bmi" class="form-label">BMI (kg/m²)</label>
+                        <input type="number" class="form-control" step="0.1" name="bmi" id="bmi" placeholder="e.g., 28.5" min="15" max="70" required>
+                    </div>
+                </div>
+
+                <!-- Row 2: HbA1c & Blood Glucose -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="HbA1c_level" class="form-label">
+                            HbA1c Level (%):
+                            <span class="info-icon" data-bs-toggle="tooltip" data-bs-title="Measures average blood sugar over 3 months. <br> (Normal: < 5.7%)">i</span>
+                        </label>
+                        <input type="number" class="form-control" step="0.1" name="HbA1c_level" id="HbA1c_level" placeholder="e.g., 5.7" min="3" max="15" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="blood_glucose_level" class="form-label">
+                            Blood Glucose Level (mg/dL):
+                            <span class="info-icon" data-bs-toggle="tooltip" data-bs-title="Your blood sugar at this moment. <br> (Normal Fasting: < 100 mg/dL)">i</span>
+                        </label>
+                        <input type="number" class="form-control" name="blood_glucose_level" id="blood_glucose_level" placeholder="e.g., 120" min="50" max="400" required>
+                    </div>
+                </div>
+                
+                <!-- Row 3: Hypertension & Heart Disease -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="hypertension" class="form-label">Hypertension Diagnosis</label>
+                        <select class="form-select" name="hypertension" id="hypertension" required>
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="heart_disease" class="form-label">Heart Disease Diagnosis</label>
+                        <select class="form-select" name="heart_disease" id="heart_disease" required>
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Row 4: Gender & Smoking -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="gender_Male" class="form-label">Gender</label>
+                        <select class="form-select" name="gender_Male" id="gender_Male" required>
+                            <option value="1">Male</option>
+                            <option value="0">Female/Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="is_smoker" class="form-label">Smoking Status</label>
+                        <select class="form-select" name="is_smoker" id="is_smoker" required>
+                            <option value="0">Non-Smoker</option>
+                            <option value="1">Smoker</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">Predict Risk</button>
                 </div>
             </form>
+
+            <!-- Result Display Area -->
+            <div id="loading-indicator" class="text-center text-secondary mt-4 d-none">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                Processing Prediction...
+            </div>
+            
+            <div id="result-container" class="mt-4 p-4 rounded border d-none">
+                <h3 class="text-lg font-bold mb-3">Prediction Result</h3>
+                <div id="prediction-result"></div>
+            </div>
+
+            <!-- Message Box (Simple Alert-like display) -->
+            <div id="message-box" class="alert d-none mt-4" role="alert">
+                <h4 id="message-title" class="alert-heading"></h4>
+                <p id="message-content"></p>
+                <button type="button" class="btn-close" onclick="document.getElementById('message-box').classList.add('d-none')" aria-label="Close"></button>
+            </div>
         </div>
     </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- 
-      START: Added Script for Tooltips
-      This JavaScript is required to initialize the Bootstrap tooltips.
-    -->
     <script>
+        // Utility function to show custom alerts instead of alert()
+        function showMessage(title, content, type = 'danger') {
+            const box = document.getElementById('message-box');
+            const titleEl = document.getElementById('message-title');
+            const resultContainer = document.getElementById('result-container');
+            
+            resultContainer.classList.add('d-none');
+            
+            titleEl.textContent = title;
+            document.getElementById('message-content').textContent = content;
+            
+            box.classList.remove('d-none', 'alert-danger', 'alert-success');
+            box.classList.add(`alert-${type}`);
+            
+            // Auto-hide the message after 5 seconds
+            setTimeout(() => box.classList.add('d-none'), 5000);
+        }
+
+        document.getElementById('prediction-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const formData = new FormData(form);
+            
+            // Convert FormData to a JSON object
+            const jsonObject = {};
+            formData.forEach((value, key) => {
+                jsonObject[key] = value;
+            });
+
+            const loading = document.getElementById('loading-indicator');
+            const resultContainer = document.getElementById('result-container');
+            const resultDiv = document.getElementById('prediction-result');
+            
+            // Hide previous results/messages and show loading
+            resultContainer.classList.add('d-none');
+            document.getElementById('message-box').classList.add('d-none');
+            loading.classList.remove('d-none');
+
+            try {
+                // Submit JSON data to the /predict endpoint with correct headers
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: JSON.stringify(jsonObject),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    let errorDetails = 'An unknown error occurred on the server.';
+                    try {
+                        const errorData = await response.json();
+                        errorDetails = errorData.error || errorDetails;
+                    } catch (jsonError) {
+                        errorDetails = `Server responded with status ${response.status}.`;
+                    }
+                    
+                    showMessage('Server Error', errorDetails);
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    showMessage('Prediction Error', data.error);
+                    return;
+                }
+
+                // Display Result
+                let resultText = '';
+                const risk = data.prediction === 1 ? 'High Risk (Diabetic)' : 'Low Risk (Non-Diabetic)';
+                const colorClass = data.prediction === 1 ? 'text-danger' : 'text-success';
+                
+                resultText += `<p class="mb-2"><span class="fw-bold">Result:</span> <span class="${colorClass} fw-bold fs-5">${risk}</span></p>`;
+                resultText += `<p class="text-sm text-secondary">Based on your input, the model predicts the following probabilities:</p>`;
+                resultText += `<ul class="list-unstyled mt-2 text-dark">`;
+                resultText += `<li>- Probability of Diabetes: <span class="fw-bold text-danger">${data.probability_diabetes}%</span></li>`;
+                resultText += `<li>- Probability of No Diabetes: <span class="fw-bold text-success">${data.probability_no_diabetes}%</span></li>`;
+                resultText += `</ul>`;
+                
+                resultDiv.innerHTML = resultText;
+                resultContainer.classList.remove('d-none');
+
+            } catch (error) {
+                showMessage('Network Error', 'Could not connect to the API. Check your internet connection.', 'warning');
+                console.error('Fetch error:', error);
+            } finally {
+                loading.classList.add('d-none');
+            }
+        });
+
+        // Initialize Bootstrap Tooltips
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
           return new bootstrap.Tooltip(tooltipTriggerEl, {
@@ -82,6 +241,5 @@
           })
         })
     </script>
-    <!-- END: Added Script for Tooltips -->
 </body>
 </html>
